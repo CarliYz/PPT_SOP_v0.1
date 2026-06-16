@@ -1,0 +1,192 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "diff_report.json schema for SOP PPT 工程链路 v1.0",
+  "description": "审计报告字段规范 · 强制产出 · 缺项 = 工程失败",
+  "type": "object",
+  "required": [
+    "project",
+    "sop_version",
+    "build_time",
+    "source_dir",
+    "render_dir",
+    "files"
+  ],
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "项目名 · 如 L1_v4 / NBK_Q3 等"
+    },
+    "sop_version": {
+      "type": "string",
+      "const": "v1.0"
+    },
+    "build_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_dir": {
+      "type": "string",
+      "description": "00_source/ 绝对路径"
+    },
+    "render_dir": {
+      "type": "string",
+      "description": "02_render_prompt/ 绝对路径"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "filename",
+          "source_sha256",
+          "render_sha256",
+          "source_chars",
+          "render_chars",
+          "expected_chars",
+          "delta_pct",
+          "transforms",
+          "compliance"
+        ],
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "如 L1_P1_封面_v2.4.md"
+          },
+          "source_sha256": {
+            "type": "string",
+            "description": "源文件 SHA256（前 16 字符）"
+          },
+          "render_sha256": {
+            "type": "string",
+            "description": "render_prompt SHA256（前 16 字符）"
+          },
+          "source_chars": {
+            "type": "integer",
+            "description": "源文件字符数"
+          },
+          "render_chars": {
+            "type": "integer",
+            "description": "render_prompt 字符数"
+          },
+          "expected_chars": {
+            "type": "integer",
+            "description": "公式预期值 = 380 + len(H1) + 80 + source_chars"
+          },
+          "delta_pct": {
+            "type": "number",
+            "description": "实际 vs 预期偏差百分比 · 必须 < 5%"
+          },
+          "transforms": {
+            "type": "object",
+            "properties": {
+              "removed_wrapper_blocks": {
+                "type": "array",
+                "description": "移除的工程包装层块",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {"type": "string", "enum": ["html_comment", "framework_metadata"]},
+                    "start_line": {"type": "integer"},
+                    "end_line": {"type": "integer"},
+                    "chars_removed": {"type": "integer"}
+                  }
+                }
+              },
+              "term_replacements": {
+                "type": "array",
+                "description": "术语替换记录 · 默认应为空数组",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "from": {"type": "string"},
+                    "to": {"type": "string"},
+                    "reason": {"type": "string"},
+                    "user_authorized": {"type": "boolean"}
+                  }
+                }
+              },
+              "truncations": {
+                "type": "array",
+                "description": "截断记录 · 必须为空数组（截断 = 违反规则 5）",
+                "maxItems": 0
+              }
+            }
+          },
+          "compliance": {
+            "type": "object",
+            "required": ["passed", "violations"],
+            "properties": {
+              "passed": {
+                "type": "boolean",
+                "description": "是否通过 6 条强制规则"
+              },
+              "violations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "rule_1_content_dropped",
+                    "rule_2_list_compressed",
+                    "rule_3_number_or_term_missing",
+                    "rule_4_term_replaced_without_report",
+                    "rule_5_truncated",
+                    "rule_6_transform_unrecorded"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total_files": {"type": "integer"},
+        "passed_files": {"type": "integer"},
+        "failed_files": {"type": "integer"},
+        "total_transforms": {"type": "integer"},
+        "total_truncations": {
+          "type": "integer",
+          "description": "必须为 0"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "project": "L1_v4",
+      "sop_version": "v1.0",
+      "build_time": "2026-06-12T08:00:00Z",
+      "source_dir": "/IIM_Sovereign_AI_Project/L1_v4/00_source",
+      "render_dir": "/IIM_Sovereign_AI_Project/L1_v4/02_render_prompt",
+      "files": [
+        {
+          "filename": "L1_P1_封面_v2.4.md",
+          "source_sha256": "a1b2c3d4e5f60718",
+          "render_sha256": "9988776655443322",
+          "source_chars": 2570,
+          "render_chars": 3030,
+          "expected_chars": 3030,
+          "delta_pct": 0.0,
+          "transforms": {
+            "removed_wrapper_blocks": [],
+            "term_replacements": [],
+            "truncations": []
+          },
+          "compliance": {
+            "passed": true,
+            "violations": []
+          }
+        }
+      ],
+      "summary": {
+        "total_files": 46,
+        "passed_files": 46,
+        "failed_files": 0,
+        "total_transforms": 0,
+        "total_truncations": 0
+      }
+    }
+  ]
+}
